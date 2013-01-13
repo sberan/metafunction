@@ -79,6 +79,7 @@ public class MetaMethodProcessor extends AbstractProcessor {
         public void compile(JavaWriter writer) throws IOException {
             writer.addPackage(packageName);
             writer.addImport(MetaFunction.class);
+            writer.addImport(Functions.class);
             writer.annotation("SuppressWarnings(\"unchecked\")");
             writer.beginType(simpleName+"<R>", "abstract class", 0);
             for (MetaMethodDef methodDef : methods.values()) {
