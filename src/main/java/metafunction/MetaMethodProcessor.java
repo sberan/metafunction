@@ -1,7 +1,6 @@
 package metafunction;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -22,6 +21,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +31,7 @@ import java.util.Set;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class MetaMethodProcessor extends AbstractProcessor {
 
-    static class CompliationUnit {
+    static class CompilationUnit {
         final Map<Name, MetaClassDef> classDefs = Maps.newHashMap();
 
         public void addMethodDef(Element method, TypeElement origin, ProcessingEnvironment environment) {
@@ -77,18 +77,18 @@ public class MetaMethodProcessor extends AbstractProcessor {
 
         public void compile(JavaWriter writer) throws IOException {
             writer.addPackage(packageName);
+            writer.addImport(MetaFunction.class);
             writer.annotation("SuppressWarnings(\"unchecked\")");
             writer.beginType(simpleName+"<R>", "abstract class", 0);
-
             for (MetaMethodDef methodDef : methods.values()) {
                 methodDef.compile(writer);
             }
-
             writer.endType();
         }
     }
 
     static class MetaMethodDef {
+        static final Joiner JOINER = Joiner.on(",");
         final ExecutableElement definition;
         final ProcessingEnvironment environment;
 
@@ -100,23 +100,43 @@ public class MetaMethodProcessor extends AbstractProcessor {
         public void compile(JavaWriter writer) throws IOException {
             List<? extends VariableElement> parameters = definition.getParameters();
             String[] paramDefs = new String[parameters.size() * 2];
-            for(int i = 0; i < parameters.size(); i++) {
-                VariableElement param = parameters.get(i);
+            List<String>delegateArgs = Lists.newArrayList();
+            int metaParam = -1;
+            int currentParamIndex = 0;
+            for(VariableElement param : parameters) {
                 TypeMirror paramType = param.asType();
                 Name paramName = param.getSimpleName();
-                paramDefs[i] = paramType.toString();
-                paramDefs[i + 1] = paramName.toString();
+
+                if(paramType.toString().startsWith("metafunction.MetaFunction")) {
+                    paramDefs[currentParamIndex] = "MetaFunction<R>";
+                    metaParam = currentParamIndex;
+                } else {
+                    paramDefs[currentParamIndex] = paramType.toString();
+                }
+                paramDefs[currentParamIndex + 1] = paramName.toString();
+                delegateArgs.add(paramName.toString());
+                currentParamIndex += 2;
             }
             String methodName = definition.getSimpleName().toString();
             String returnType = definition.getReturnType().toString();
-            writer.beginMethod(returnType, methodName, Modifier.ABSTRACT, "metafunction.MetaFunction<R>", "fn");
+            writer.beginMethod(returnType, methodName, Modifier.ABSTRACT, paramDefs);
             writer.endMethod();
 
             List<String> genericFunctionParams = Lists.newArrayList();
             List<String> applyArgs = Lists.newArrayList();
             for(int i = 0; i <= 10; i++) {
-                writer.beginMethod(genericFunctionParams.isEmpty()? returnType: ("<" + Joiner.on(",").join(genericFunctionParams) +"> " +returnType), methodName, Modifier.PUBLIC, "metafunction.Functions.F"+i+"<"+ (genericFunctionParams.isEmpty()?"":Joiner.on(",").join(genericFunctionParams) +",") +"R>", "fn");
-                writer.statement("%s %s((metafunction.MetaFunction<R>) args -> fn.apply(" + Joiner.on(",").join(applyArgs) + "))", returnType.equals("void") ? "" : "return", methodName);
+                String functionResultGenerics = "<"+ (genericFunctionParams.isEmpty()?"": JOINER.join(genericFunctionParams) +",") +"R>";
+                String methodResultGenerics = genericFunctionParams.isEmpty()?"" : ("<" + JOINER.join(genericFunctionParams) +"> ");
+                paramDefs[metaParam] =  "Functions.F"+i+functionResultGenerics;
+                delegateArgs.set(metaParam / 2, String.format("MetaFunction.of(args -> %s.apply(%s))",
+                        paramDefs[metaParam + 1],
+                        JOINER.join(applyArgs)));
+
+                writer.beginMethod(methodResultGenerics + " " + returnType,  methodName, Modifier.PUBLIC, paramDefs);
+                writer.statement("%s %s(%s)",
+                        returnType.equals("void") ? "" : "return",
+                        methodName,
+                        JOINER.join(delegateArgs));
                 writer.endMethod();
                 genericFunctionParams.add("T"+i);
                 applyArgs.add("(T"+i+") args[" + i +"]");
@@ -124,7 +144,7 @@ public class MetaMethodProcessor extends AbstractProcessor {
         }
     }
 
-    CompliationUnit compliationUnit = new CompliationUnit();
+    CompilationUnit compilationUnit = new CompilationUnit();
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
@@ -132,12 +152,12 @@ public class MetaMethodProcessor extends AbstractProcessor {
             for (TypeElement annotation : annotations) {
                 Set<? extends Element> annotatedMethods = env.getElementsAnnotatedWith(MetaMethod.class);
                 for (Element method : annotatedMethods) {
-                    compliationUnit.addMethodDef(method, annotation, processingEnv);
+                    compilationUnit.addMethodDef(method, annotation, processingEnv);
                 }
             }
 
             if(env.processingOver()) {
-                compliationUnit.compile(processingEnv.getFiler());
+                compilationUnit.compile(processingEnv.getFiler());
             }
             return false;
         } catch (IOException e) {

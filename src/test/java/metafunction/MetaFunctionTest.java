@@ -1,12 +1,15 @@
 package metafunction;
 
+import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
+import static org.fest.assertions.Assertions.assertThat;
 
 public class MetaFunctionTest {
 
@@ -111,10 +114,39 @@ public class MetaFunctionTest {
         ;
     }
 
+    static class RouterExample extends RouterExample_MetaFunction<Object> {
+        final Map<String, MetaFunction<Object>> handlers = Maps.newHashMap();
+
+        @MetaMethod RouterExample route(String path, MetaFunction<Object> handler) {
+            handlers.put(path, handler);
+            return this;
+        }
+
+        public Object apply(String path, Object... args) {
+            return handlers.get(path).apply(args);
+        }
+    }
+
+    @Test public void testRouter() {
+        RouterExample router = new RouterExample();
+        router.route("foo", () -> "bar")
+              .route("name", (String name) -> "Hello, " + name);
+
+
+        assertThat(router.apply("foo")).isEqualTo("bar");
+
+        assertThat(router.apply("name", "Sam")).isEqualTo("Hello, Sam");
+    }
+
+
+
+
+
     //TODO: multiple @MetaMethods with different types?
-    //TODO: allow additional parameters on method?
     //TODO: ensure exactly one MetaFunction parameter per method
+    //TODO: enable generic metamethod return type
     //TODO: validate clashing meta methods
     //TODO: single Object arg causes error when in same package
     //TODO: nice error messages for mismatched params
+    //TODO: metafunction arg named "args" might fail
 }
