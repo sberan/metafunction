@@ -155,19 +155,16 @@ public class MetaMethodProcessor extends AbstractProcessor {
         }
     }
 
-    CompilationUnit compilationUnit = new CompilationUnit();
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
         try {
             for (TypeElement annotation : annotations) {
+                CompilationUnit compilationUnit = new CompilationUnit();
                 Set<? extends Element> annotatedMethods = env.getElementsAnnotatedWith(MetaMethod.class);
                 for (Element method : annotatedMethods) {
                     compilationUnit.addMethodDef(method, annotation, processingEnv);
                 }
-            }
-
-            if(env.processingOver()) {
                 compilationUnit.compile(processingEnv.getFiler());
             }
             return false;

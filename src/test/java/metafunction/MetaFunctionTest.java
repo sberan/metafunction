@@ -27,7 +27,6 @@ public class MetaFunctionTest {
 
     static class FunctionAssert extends FunctionAssert_MetaFunction<List<? extends Object>> {
 
-
         @MetaMethod AssertBuilder whenFunction(MetaFunction<List<? extends Object>> function) {
             return new AssertBuilder(function, this);
         }
@@ -140,22 +139,17 @@ public class MetaFunctionTest {
     }
 
 
-    public static class MetaFunctionNamedArgs extends MetaFunctionNamedArgs_MetaFunction<String> {
-        @MetaMethod public String go(MetaFunction<String> func, Object... args) {
+    public static class VarArgsMetaFunction extends MetaFunctionNamedArgs_MetaFunction<String> {
+        @MetaMethod public String apply(MetaFunction<String> func, Object... args) {
             return func.apply(args);
         }
     }
 
 
     @Test public void testFunctionCanBeNamedArgsAndHaveVarArgs() {
-        String result = new MetaFunctionNamedArgs().go((String arg) -> arg, "Foo");
+        String result = new VarArgsMetaFunction().apply((String arg) -> arg, "Foo");
         assertThat(result).isEqualTo("Foo");
     }
-
-
-
-
-
 
 
     //TODO: multiple @MetaMethods with different types?
