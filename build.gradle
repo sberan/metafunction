@@ -1,4 +1,12 @@
 apply from: 'http://sberan.github.com/gradle-boilerplate/boilerplate.gradle'
+  
+apply plugin: 'maven'
+
+group = 'metafunction'
+version = '1.0-SNAPSHOT'
+
+repositories {
+}
 
 dependencies {
 
