@@ -1,0 +1,6 @@
+apply from: 'http://sberan.github.com/gradle-boilerplate/boilerplate.gradle'
+
+dependencies {
+
+}
+
