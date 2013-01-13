@@ -3,6 +3,7 @@ package metafunction;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -103,10 +104,11 @@ public class MetaMethodProcessor extends AbstractProcessor {
             List<String>delegateArgs = Lists.newArrayList();
             int metaParam = -1;
             int currentParamIndex = 0;
+            Set<String> paramNames = Sets.newHashSet();
             for(VariableElement param : parameters) {
                 TypeMirror paramType = param.asType();
                 Name paramName = param.getSimpleName();
-
+                paramNames.add(paramName.toString());
                 if(paramType.toString().startsWith("metafunction.MetaFunction")) {
                     paramDefs[currentParamIndex] = "MetaFunction<R>";
                     metaParam = currentParamIndex;
@@ -124,22 +126,28 @@ public class MetaMethodProcessor extends AbstractProcessor {
 
             List<String> genericFunctionParams = Lists.newArrayList();
             List<String> applyArgs = Lists.newArrayList();
+            String argsVariableName = "args";
+            int variableNameSuffix = 0;
+            while(paramNames.contains(argsVariableName)) {
+                argsVariableName = "args" + variableNameSuffix++;
+            }
             for(int i = 0; i <= 10; i++) {
                 String functionResultGenerics = "<"+ (genericFunctionParams.isEmpty()?"": JOINER.join(genericFunctionParams) +",") +"R>";
                 String methodResultGenerics = genericFunctionParams.isEmpty()?"" : ("<" + JOINER.join(genericFunctionParams) +"> ");
                 paramDefs[metaParam] =  "Functions.F"+i+functionResultGenerics;
-                delegateArgs.set(metaParam / 2, String.format("MetaFunction.of(args -> %s.apply(%s))",
+                delegateArgs.set(metaParam / 2, String.format("MetaFunction.of(%s -> %s.apply(%s))",
+                        argsVariableName,
                         paramDefs[metaParam + 1],
                         JOINER.join(applyArgs)));
 
-                writer.beginMethod(methodResultGenerics + " " + returnType,  methodName, Modifier.PUBLIC, paramDefs);
+                writer.beginMethod(methodResultGenerics + " " + returnType, methodName, Modifier.PUBLIC, paramDefs);
                 writer.statement("%s %s(%s)",
                         returnType.equals("void") ? "" : "return",
                         methodName,
                         JOINER.join(delegateArgs));
                 writer.endMethod();
                 genericFunctionParams.add("T"+i);
-                applyArgs.add("(T"+i+") args[" + i +"]");
+                applyArgs.add("(T"+i+") " + argsVariableName + "[" + i +"]");
             }
         }
     }

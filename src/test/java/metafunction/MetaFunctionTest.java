@@ -139,6 +139,21 @@ public class MetaFunctionTest {
     }
 
 
+    public static class MetaFunctionNamedArgs extends MetaFunctionNamedArgs_MetaFunction<String> {
+        @MetaMethod public String go(MetaFunction<String> func, Object... args) {
+            return func.apply(args);
+        }
+    }
+
+
+    @Test public void testFunctionCanBeNamedArgs() {
+        String result = new MetaFunctionNamedArgs().go((String arg) -> arg, new Object[]{"Foo"});
+        assertThat(result).isEqualTo("Foo");
+    }
+
+
+
+
 
 
 
@@ -148,5 +163,6 @@ public class MetaFunctionTest {
     //TODO: validate clashing meta methods
     //TODO: single Object arg causes error when in same package
     //TODO: nice error messages for mismatched params
-    //TODO: metafunction arg named "args" might fail
+    //TODO: metamethod varargs
+    //TODO: metamethod named apply
 }
