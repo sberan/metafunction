@@ -135,7 +135,7 @@ public class MetaMethodProcessor extends AbstractProcessor {
             while(paramNames.contains(argsVariableName)) {
                 argsVariableName = "args" + variableNameSuffix++;
             }
-            for(int i = 0; i <= 10; i++) {
+            for(int i = 0; i    <= 10; i++) {
                 String functionResultGenerics = "<"+ (genericFunctionParams.isEmpty()?"": JOINER.join(genericFunctionParams) +",") +"R>";
                 String methodResultGenerics = genericFunctionParams.isEmpty()?"" : ("<" + JOINER.join(genericFunctionParams) +"> ");
                 paramDefs[metaParam] =  "Functions.F"+i+functionResultGenerics;
