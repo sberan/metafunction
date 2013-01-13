@@ -127,7 +127,8 @@ public class MetaFunctionTest {
         }
     }
 
-    @Test public void testRouter() {
+
+    @Test public void testMetaMethodsCanHaveAdditionalArgs() {
         RouterExample router = new RouterExample();
         router.route("foo", () -> "bar")
               .route("name", (String name) -> "Hello, " + name);
@@ -146,8 +147,8 @@ public class MetaFunctionTest {
     }
 
 
-    @Test public void testFunctionCanBeNamedArgs() {
-        String result = new MetaFunctionNamedArgs().go((String arg) -> arg, new Object[]{"Foo"});
+    @Test public void testFunctionCanBeNamedArgsAndHaveVarArgs() {
+        String result = new MetaFunctionNamedArgs().go((String arg) -> arg, "Foo");
         assertThat(result).isEqualTo("Foo");
     }
 
@@ -163,6 +164,4 @@ public class MetaFunctionTest {
     //TODO: validate clashing meta methods
     //TODO: single Object arg causes error when in same package
     //TODO: nice error messages for mismatched params
-    //TODO: metamethod varargs
-    //TODO: metamethod named apply
 }

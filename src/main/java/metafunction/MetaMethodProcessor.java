@@ -119,6 +119,9 @@ public class MetaMethodProcessor extends AbstractProcessor {
                 delegateArgs.add(paramName.toString());
                 currentParamIndex += 2;
             }
+            if(definition.isVarArgs()) {
+                paramDefs[paramDefs.length -2] = paramDefs[paramDefs.length -2].replaceAll("\\[]$", "...");
+            }
             String methodName = definition.getSimpleName().toString();
             String returnType = definition.getReturnType().toString();
             writer.beginMethod(returnType, methodName, Modifier.ABSTRACT, paramDefs);
